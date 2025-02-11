@@ -16,6 +16,7 @@ namespace SoundCloudDownloader.SoundCloud
         private const string ClientSecret = "";
         private const string RedirectUri = "http://localhost:5000/callback";
         private readonly HttpClient _httpClient;
+        private string _oAuthToken = "";
 
         public SoundCloudClient()
         {
@@ -24,8 +25,11 @@ namespace SoundCloudDownloader.SoundCloud
 
         public async Task<string> TestOAuthAsync()
         {
-            string response = string.Empty;
+            return "";
+        }
 
+        private async Task Authorize()
+        {
             var codeVerifier = PKCEHelper.GenerateCodeVerifier();
             var authorizationUrl = SoundCloudAuth.GetAuthorizationUrl(ClientId, RedirectUri, codeVerifier);
 
@@ -38,13 +42,12 @@ namespace SoundCloudDownloader.SoundCloud
             var code = await GetAuthorizationCodeAsync(RedirectUri);
             if (string.IsNullOrEmpty(code))
             {
-                return "";
+                throw new Exception("Cannot get authorization code.");
             }
 
             var soundCloudOAuth = new SoundCloudOAuth();
             var tokenResponse = await soundCloudOAuth.GetAccessTokenAsync(ClientId, ClientSecret, RedirectUri, codeVerifier, code);
-
-            return tokenResponse ?? "";
+            _oAuthToken = tokenResponse;
         }
 
         private static async Task<string> GetAuthorizationCodeAsync(string redirectUri)
@@ -67,13 +70,6 @@ namespace SoundCloudDownloader.SoundCloud
 
             listener.Stop();
             return code;
-        }
-
-        private static string ExtractCodeFromUri(string uri)
-        {
-            var query = new Uri(uri).Query;
-            var queryParams = HttpUtility.ParseQueryString(query);
-            return queryParams["code"];
         }
 
         public async Task<(long TotalBytes, HttpContent Content)> StartTrackDownloadAsync(string trackUrl)
