@@ -17,17 +17,31 @@ namespace SoundCloudDownloader.SoundCloud
             this._httpClient = new HttpClient();
         }
 
-
-        private async Task<string[]> GetTracksFromPlaylist(string playlistUrl)
+        private async Task<Track[]> GetTracksFromPlaylistAsync(string playlistUrl)
         {
-            var tracks = new List<string>();
-
             var resolveUrl = $"https://api.soundcloud.com/resolve?url={playlistUrl}&client_id={ClientId}";
+
             var response = await _httpClient.GetAsync(resolveUrl);
             var contentStream = await response.Content.ReadAsStreamAsync();
             var playlist = await JsonSerializer.DeserializeAsync<Playlist>(contentStream);
 
-            return tracks.ToArray();
+            if (playlist != null)
+            {
+                return playlist.Tracks;
+            }
+            else
+            {
+                throw new Exception($"Playlist {playlistUrl} not found.");
+            }
+        }
+
+        private async Task<byte[]> DownloadTrackAsync(string trackUrl)
+        {
+            var resolveUrl = $"{trackUrl}?client_id={ClientId}";
+
+            var response = await _httpClient.GetAsync(resolveUrl);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsByteArrayAsync();
         }
     }
 }
