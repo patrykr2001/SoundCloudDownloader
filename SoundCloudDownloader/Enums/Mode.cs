@@ -12,5 +12,6 @@ namespace SoundCloudDownloader.Enums
         Multiple = 1,
         Playlist = 2,
         Json = 3,
+        Test = 4,
     }
 }

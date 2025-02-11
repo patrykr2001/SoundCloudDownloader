@@ -1,6 +1,8 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Cli;
 using SoundCloudDownloader.Enums;
+using System;
+using SoundCloudDownloader.SoundCloud;
 
 namespace SoundCloudDownloader
 {
@@ -27,6 +29,9 @@ namespace SoundCloudDownloader
                     break;
                 case Mode.Json:
                     break;
+                case Mode.Test:
+                    AnsiConsole.WriteLine(await new SoundCloudClient().TestOAuthAsync());
+                    break;
             }
         }
 
@@ -36,12 +41,63 @@ namespace SoundCloudDownloader
 
             var url = GetValidUrlFromUser();
 
-            AnsiConsole.Status()
-                .Start("Downloading [blue]music[/]...", ctx =>
-                {
-                    AnsiConsole.MarkupLine($"Starting download of [green]{url}[/]");
+            try
+            {
+                await DownloadTrack(url);
+                AnsiConsole.MarkupLine($"[green]Finished[/] downloading [green]{url}[/]");
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.WriteException(ex);
+            }
+        }
 
+        private static async Task DownloadTrack(string trackUrl)
+        {
+            await AnsiConsole.Progress()
+                .Columns(new ProgressColumn[]
+                {
+                    new TaskDescriptionColumn(),
+                    new ProgressBarColumn(),
+                    new PercentageColumn(),
+                    new RemainingTimeColumn(),
+                    new SpinnerColumn(),
+                })
+                .StartAsync(async ctx =>
+                {
+                    var downloadTask = ctx.AddTask(trackUrl, new ProgressTaskSettings
+                    {
+                        AutoStart = false,
+                    });
+
+                    await DownloadTrackWithProgress(downloadTask, trackUrl);
                 });
+        }
+
+        private static async Task DownloadTrackWithProgress(ProgressTask task, string trackUrl)
+        {
+            var response = await new SoundCloudClient().StartTrackDownloadAsync(trackUrl);
+            task.MaxValue = response.TotalBytes;
+            task.StartTask();
+
+            AnsiConsole.MarkupLine($"[blue]Starting[/] download of [green]{trackUrl}[/]");
+            var filename = trackUrl.Substring(trackUrl.LastIndexOf('/') + 1) + ".mp3";
+
+            using (var contentStream = await response.Content.ReadAsStreamAsync())
+            using (var fileStream = new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true)) 
+            {
+                var buffer = new byte[8192];
+                long totalRead = 0;
+                int bytesRead;
+
+                while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                    totalRead += bytesRead;
+
+                    task.Increment(bytesRead);
+                }
+            }
         }
 
         private static string GetValidUrlFromUser()
