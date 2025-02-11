@@ -30,16 +30,4 @@ namespace SoundCloudDownloader.SoundCloud
             return tracks.ToArray();
         }
     }
-
-    public class Playlist
-    {
-        public string Title { get; set; }
-        public Track[] Tracks { get; set; }
-    }
-
-    public class Track
-    {
-        public string Title { get; set; }
-        public string PermalinkUrl { get; set; }
-    }
 }
