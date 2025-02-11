@@ -10,5 +10,6 @@ namespace SoundCloudDownloader.SoundCloud
     {
         public string Title { get; set; } = string.Empty;
         public string PermalinkUrl { get; set; } = string.Empty;
+        public string StreamUrl { get; set; } = string.Empty;
     }
 }
