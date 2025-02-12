@@ -25,7 +25,8 @@ namespace SoundCloudDownloader.SoundCloud
 
         public async Task<string> TestOAuthAsync()
         {
-            return "";
+            await Authorize();
+            return _oAuthToken;
         }
 
         private async Task Authorize()
